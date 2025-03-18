@@ -1,9 +1,7 @@
-# upload.py
-
 import os
 import logging
 import requests
-from fastapi import APIRouter, UploadFile, HTTPException
+from fastapi import APIRouter, UploadFile, HTTPException, Form, File
 from utils.file_utils import fix_oci_url  # ✅ Correct absolute import
 
 # ✅ Define allowed file extensions & size limits
@@ -58,7 +56,8 @@ async def save_file(file: UploadFile, email: str, category: str) -> str:
     upload_url = fix_oci_url(email, category, ext)  # ✅ Ensure the correct OCI URL format
 
     # ✅ Upload to OCI Object Storage
-    response = requests.put(upload_url, data=file_content, headers={"Content-Type": "application/octet-stream"})
+    headers = {"Content-Type": file.content_type}
+    response = requests.put(upload_url, data=file_content, headers=headers)
 
     if response.status_code != 200:
         logger.error(f"❌ OCI Upload Failed: {response.status_code} - {response.text}")
@@ -71,11 +70,11 @@ async def save_file(file: UploadFile, email: str, category: str) -> str:
 
 # ✅ Upload API Endpoint
 @router.post("/upload/{category}")
-async def upload_file(category: str, email: str, file: UploadFile):
+async def upload_file(category: str, email: str = Form(...), file: UploadFile = File(...)):
     """Handles file upload for candidates and HR users."""
     if not email:
         raise HTTPException(status_code=400, detail="Email is required")
 
     oci_url = await save_file(file, email, category)
-    
+
     return {"success": True, "file_url": oci_url}
