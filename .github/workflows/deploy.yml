@@ -3,7 +3,7 @@ name: Deploy Backend to OCI
 on:
   push:
     branches:
-      - main  # Deploy only when main branch is updated
+      - main  # Deploy when main branch is updated
 
 jobs:
   deploy:
@@ -12,16 +12,19 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Deploy to OCI Instance
+      - name: Deploy to OCI Backend
         uses: appleboy/ssh-action@v0.1.5
         with:
-          host: 141.148.219.190
+          host: 141.148.219.190  # Backend OCI instance IP
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /home/ubuntu/backend
             git pull origin main
-            pip install -r requirements.txt  # Install Python dependencies (if using Flask/Django/FastAPI)
-            npm install  # Install dependencies (if using Node.js)
-            pm2 restart backend  # Restart the backend service (if using PM2 for Node.js)
-            sudo systemctl restart gunicorn  # Restart Gunicorn (if using Flask/Django)
+            pip install -r requirements.txt  # Install Python dependencies
+            
+            # Securely apply Alembic migrations using GitHub Secrets
+            export DATABASE_URL="postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}"
+            alembic upgrade head  # Run Alembic migrations
+            
+            sudo systemctl restart gunicorn  # Restart FastAPI backend
