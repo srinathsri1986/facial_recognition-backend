@@ -12,12 +12,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Deploy to OCI Backend
+      - name: Deploy to OCI Backend with Password
         uses: appleboy/ssh-action@v0.1.5
         with:
           host: 141.148.219.190  # Backend OCI instance IP
           username: ubuntu
-          password: ${{ secrets.SSH_PASSWORD }}
+          password: ${{ secrets.SSH_PASSWORD }}  # Use GitHub Secret for password
+          port: 22  # Explicitly specify SSH port
           script: |
             cd /home/ubuntu/backend
             git pull origin main
