@@ -30,6 +30,7 @@ async def hr_login(request: HRLoginRequest, db: Session = Depends(get_db)):
 @router.get("/candidates")
 async def get_all_candidates(db: Session = Depends(get_db)):
     candidates = db.query(Candidate).all()
+    
     return {
         "success": True,
         "data": [
@@ -38,9 +39,9 @@ async def get_all_candidates(db: Session = Depends(get_db)):
                 "first_name": c.first_name,
                 "last_name": c.last_name,
                 "email": c.email,
-                "photo": fix_oci_url(c.email, "photo", "jpg") if c.photo else None,
+                "photo": fix_oci_url(c.email, "photo", c.photo.split(".")[-1]) if c.photo else None,
                 "resume": fix_oci_url(c.email, "resume", c.resume.split(".")[-1]) if c.resume else None,
-                "id_proof": fix_oci_url(c.email, "id_proof", "jpg") if c.id_proof else None,
+                "id_proof": fix_oci_url(c.email, "id_proof", c.id_proof.split(".")[-1]) if c.id_proof else None,
                 "verified": c.verified,
             }
             for c in candidates
@@ -61,9 +62,9 @@ async def get_candidate(candidate_id: int, db: Session = Depends(get_db)):
             "first_name": candidate.first_name,
             "last_name": candidate.last_name,
             "email": candidate.email,
-            "photo": fix_oci_url(candidate.email, "photo", "jpg") if candidate.photo else None,
+            "photo": fix_oci_url(candidate.email, "photo", candidate.photo.split(".")[-1]) if candidate.photo else None,
             "resume": fix_oci_url(candidate.email, "resume", candidate.resume.split(".")[-1]) if candidate.resume else None,
-            "id_proof": fix_oci_url(candidate.email, "id_proof", "jpg") if candidate.id_proof else None,
+            "id_proof": fix_oci_url(candidate.email, "id_proof", candidate.id_proof.split(".")[-1]) if candidate.id_proof else None,
             "verified": candidate.verified,
         }
     }
