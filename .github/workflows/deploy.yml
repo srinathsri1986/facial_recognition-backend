@@ -17,7 +17,7 @@ jobs:
         with:
           host: 141.148.219.190  # Backend OCI instance IP
           username: ubuntu
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          password: ${{ secrets.SSH_PASSWORD }}
           script: |
             cd /home/ubuntu/backend
             git pull origin main
