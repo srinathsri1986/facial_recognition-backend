@@ -22,10 +22,19 @@ jobs:
           script: |
             cd /home/ubuntu/backend
             git pull origin main
-            pip install -r requirements.txt  # Install Python dependencies
-            
+
+            # Ensure Python dependencies are installed
+            pip install --user -r requirements.txt  
+
+            # Add ~/.local/bin to PATH to find Alembic
+            export PATH=$HOME/.local/bin:$PATH  
+
+            # Ensure Alembic is installed
+            pip install --user alembic  
+
             # Securely apply Alembic migrations using GitHub Secrets
             export DATABASE_URL="postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}"
-            alembic upgrade head  # Run Alembic migrations
-            
-            sudo systemctl restart gunicorn  # Restart FastAPI backend
+            alembic upgrade head  
+
+            # Restart Gunicorn properly
+            sudo systemctl restart gunicorn || sudo systemctl start gunicorn
