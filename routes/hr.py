@@ -184,9 +184,10 @@ async def get_candidates_match_status(db: Session = Depends(get_db)):
                 "checked_frames": row[8],
                 "matching_frames": row[9],
                 "created_at": row[10],
-                "photo": fix_oci_url(row[3], "photo", "jpg") if row[11] else None,
+                "photo": fix_oci_url(row[3], "photo", row[11].split(".")[-1]) if row[11] else None,
                 "resume": fix_oci_url(row[3], "resume", row[12].split(".")[-1]) if row[12] else None,
-                "id_proof": fix_oci_url(row[3], "id_proof", "jpg") if row[13] else None
+                "id_proof": fix_oci_url(row[3], "id_proof", row[13].split(".")[-1]) if row[13] else None
+
             }
             for row in results
         ]
