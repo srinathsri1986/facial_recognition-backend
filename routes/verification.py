@@ -22,6 +22,14 @@ async def perform_face_matching(
         raise HTTPException(status_code=404, detail="Candidate not found")
 
     result = compare_faces(photo_path, video_path, db, candidate_id)  # ✅ Pass `db` and `candidate_id`
+    
+    # ✅ Optional: Log result
+    print("Face Match Result:", result)
+
+    # ✅ If matched and confidence_score >= 0.8, mark candidate as verified
+    if result.get("match_found") and result.get("confidence_score", 0.0) >= 0.8:
+        candidate.verified = True
+        db.commit()
 
     return {"success": True, "result": result}
 
