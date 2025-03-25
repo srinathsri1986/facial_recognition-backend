@@ -189,4 +189,4 @@ async def reset_password(request: PasswordResetRequest, db: Session = Depends(ge
     hashed_password = Hash.bcrypt(new_password)
     candidate.password = hashed_password
     db.commit()
-    return {"success": True, "message": "Password reset successful. New password sent to email
+    return {"success": True, "message": "Password reset successful. New password sent to email"}
