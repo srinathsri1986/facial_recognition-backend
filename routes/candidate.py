@@ -12,6 +12,7 @@ from services.hashing import Hash
 from typing import Optional
 from pydantic import BaseModel, EmailStr
 from urllib.parse import unquote
+import secrets
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -78,9 +79,9 @@ async def candidate_login(request: LoginRequest, db: Session = Depends(get_db)):
     return {"success": True, "message": "Login successful!", "email": candidate.email, "hasCompletedProfile": has_completed_profile}
 
 ### ======================== 3️⃣ GET CANDIDATE DETAILS ========================== ###
-@router.get("/{email}/")  # ✅ Use this route instead
+@router.get("/{email}/")
 async def get_candidate(email: str, db: Session = Depends(get_db)):
-    decoded_email = unquote(email)  # ✅ Decode %40 back to @
+    decoded_email = unquote(email)
     candidate = db.query(Candidate).filter(Candidate.email == decoded_email).first()
 
     if not candidate:
@@ -117,37 +118,38 @@ async def upload_to_oci(file: UploadFile, category: str, candidate_email: str) -
         if response.status_code != 200:
             raise HTTPException(status_code=500, detail="Failed to upload file to OCI")
 
-        return upload_url  # ✅ Return uploaded file URL
+        return upload_url
 
     except Exception as e:
         logger.error(f"OCI Upload Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Error uploading file to OCI")
 
-@router.post("/update-details")  # ✅ FIXED: Removed extra '@' symbol
+@router.post("/update-details")
 async def update_candidate_details(
-    update_data: str = Form(...),  # ✅ Expect JSON as a string
+    email: str = Form(...), #Email is mandatory
+    first_name: Optional[str] = Form(None),
+    last_name: Optional[str] = Form(None),
+    address: Optional[str] = Form(None),
+    phone: Optional[str] = Form(None),
     id_proof: UploadFile = File(None),
     photo: UploadFile = File(None),
     resume: UploadFile = File(None),
     db: Session = Depends(get_db)
 ):
-    try:
-        # ✅ Convert JSON string to dictionary
-        update_data = json.loads(update_data)
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON format for update_data")
-
-    email = update_data.get("email")
     candidate = db.query(Candidate).filter(Candidate.email == email).first()
 
     if not candidate:
         raise HTTPException(status_code=404, detail=f"Candidate not found: {email}")
 
-    # ✅ Update fields if provided
-    candidate.first_name = update_data.get("first_name", candidate.first_name)
-    candidate.last_name = update_data.get("last_name", candidate.last_name)
-    candidate.address = update_data.get("address", candidate.address)
-    candidate.phone = update_data.get("phone", candidate.phone)
+    # Update fields only if they are provided
+    if first_name:
+        candidate.first_name = first_name
+    if last_name:
+        candidate.last_name = last_name
+    if address:
+        candidate.address = address
+    if phone:
+        candidate.phone = phone
 
     try:
         db.commit()
@@ -155,7 +157,7 @@ async def update_candidate_details(
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-    # ✅ Upload new files
+    # Upload new files
     try:
         if id_proof:
             candidate.id_proof = await upload_to_oci(id_proof, "id_proof", email)
@@ -166,9 +168,25 @@ async def update_candidate_details(
 
         db.commit()
         return {"success": True, "message": "Candidate details updated successfully"}
-    
+
     except Exception as e:
         db.rollback()
         logger.error(f"File upload error for {email}: {e}")
         raise HTTPException(status_code=500, detail=f"File upload failed: {e}")
 
+### ======================== 5️⃣ PASSWORD RESET ========================== ###
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+@router.post("/reset-password")
+async def reset_password(request: PasswordResetRequest, db: Session = Depends(get_db)):
+    candidate = db.query(Candidate).filter(Candidate.email == request.email).first()
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    new_password = secrets.token_urlsafe(8) # Generate a secure random password.
+    hashed_password = Hash.bcrypt(new_password)
+    candidate.password = hashed_password
+    db.commit()
+    return {"success": True, "message": "Password reset successful. New password sent to email
