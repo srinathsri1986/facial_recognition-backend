@@ -2,6 +2,9 @@ import smtplib
 import logging
 import traceback
 from email.message import EmailMessage
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from config import SMTP_SERVER, SMTP_PORT, SMTP_EMAIL, SMTP_PASSWORD
 
 logger = logging.getLogger(__name__)
